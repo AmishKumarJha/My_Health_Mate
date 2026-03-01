@@ -11,5 +11,3 @@ venv/
 Frontend/node_modules
 Frontend/.next
 
-# ML Models
-Backend/models/*.pkl

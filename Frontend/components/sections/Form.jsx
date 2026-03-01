@@ -1,104 +1,77 @@
-"use client"; 
-
+"use client";
 import { useState } from "react";
 
 export default function Form() {
-  // 1. UPDATED: Only 5 inputs required for the new model!
-  const [formData, setFormData] = useState({
-    Ages: 25,
-    Gender: "Male",
-    Height: 175,
-    Weight: 75,
-    "Activity Level": "Moderate" // Ensure this matches exactly how it's spelled in your dataset
-  });
-
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [reportData, setReportData] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const parsedValue = isNaN(value) ? value : Number(value);
-    setFormData((prev) => ({ ...prev, [name]: parsedValue }));
-  };
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const getDietRecommendation = async (patientData) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
     setLoading(true);
     setError(null);
-    setResult(null);
+    setReportData(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/predict", {
+      const response = await fetch("http://127.0.0.1:5000/predict-weekly", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patientData),
+        body: formData,
       });
-
       const data = await response.json();
-
+      
       if (response.ok) {
-        setResult(data.recommended_diet); // This is now an object of macro numbers/meal data!
+        setReportData(data);
       } else {
-        setError(data.error || "Something went wrong.");
+        setError(data.error);
       }
     } catch (err) {
-      setError("Could not connect to the server. Is Flask running?");
+      setError("Cannot connect to Local OCR Server. Run python3 app.py first.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    getDietRecommendation(formData);
-  };
-
   return (
-    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif" }}>
-      
-      {/* --- UPDATED RESULT CARD FOR REGRESSION OUTPUT --- */}
-      {result && (
-        <div style={{ backgroundColor: "#ffffff", border: "2px solid #4CAF50", borderRadius: "12px", padding: "30px", marginBottom: "30px", boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" }}>
-          <h2 style={{ margin: "0 0 15px 0", color: "#333", textAlign: "center" }}>📊 Your Detailed Macro Plan</h2>
-          
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-            {/* Loops through the predicted macros and displays them neatly */}
-            {Object.entries(result).map(([key, value]) => (
-              <div key={key} style={{ background: "#f4f4f4", padding: "10px", borderRadius: "8px" }}>
-                <strong>{key.replace(/_/g, " ")}:</strong> 
-                <span style={{ float: "right", color: "#4CAF50", fontWeight: "bold" }}>
-                  {typeof value === 'number' ? value.toFixed(1) : value}
-                </span>
+    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+      <div className="border-4 border-dashed border-gray-100 rounded-xl p-10 text-center bg-gray-50">
+        <input 
+          type="file" 
+          onChange={handleFileUpload} 
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" 
+        />
+        <p className="mt-4 text-gray-600 font-medium">
+          {loading ? "⚙️ Local OCR Scanning..." : "Upload your report for instant analysis"}
+        </p>
+      </div>
+
+      {error && <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-lg">❌ {error}</div>}
+
+      {reportData && (
+        <div className="mt-8 space-y-6 animate-in fade-in duration-500">
+          <div className="bg-blue-600 text-white p-6 rounded-xl shadow-md">
+            <h3 className="text-xl font-bold">Local Analysis: {reportData.deficiency_found} Optimized</h3>
+            <p className="opacity-90">Goal: {reportData.goal}</p>
+            <div className="mt-3 flex gap-4 text-sm font-mono bg-black/10 p-2 rounded">
+              <span>Extracted Hb: {reportData.extracted_info.Hemoglobin}</span>
+              <span>Extracted Age: {reportData.extracted_info.Ages}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {Object.entries(reportData.weekly_diet).map(([day, meal]) => (
+              <div key={day} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <span className="text-blue-600 font-bold text-xs uppercase">{day}</span>
+                <p className="mt-2 text-sm text-gray-700 leading-tight">{meal}</p>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {error && <div style={{ background: "#f8d7da", color: "#721c24", padding: "15px", borderRadius: "8px", marginBottom: "20px" }}><p>❌ Error: {error}</p></div>}
-
-      <h2 style={{ textAlign: "center", marginBottom: "20px" }}>🩺 Enter Your Stats</h2>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-        
-        {Object.keys(formData).map((key) => (
-          <div key={key} style={{ display: "flex", flexDirection: "column" }}>
-            <label style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "5px", color: "#444" }}>{key}</label>
-            <input
-              type={typeof formData[key] === "number" ? "number" : "text"}
-              name={key}
-              value={formData[key]}
-              onChange={handleChange}
-              step="any"
-              required
-              style={{ padding: "10px", borderRadius: "6px", border: "1px solid #ccc", fontSize: "15px" }}
-            />
-          </div>
-        ))}
-
-        <button type="submit" disabled={loading} style={{ marginTop: "10px", padding: "15px", background: loading ? "#ccc" : "#0070f3", color: "white", border: "none", borderRadius: "8px", cursor: loading ? "not-allowed" : "pointer", fontWeight: "bold", fontSize: "18px" }}>
-          {loading ? "Calculating..." : "Generate Detailed Plan"}
-        </button>
-      </form>
     </div>
   );
 }

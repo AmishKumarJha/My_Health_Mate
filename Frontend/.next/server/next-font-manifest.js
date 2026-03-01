@@ -1,1 +1,1 @@
-self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/Users/amish_jha/Downloads/My_Health_Mate/app/layout\":[\"static/media/13971731025ec697-s.p.woff2\",\"static/media/49eec060ce8bd0da-s.p.woff2\",\"static/media/fa3e259cafa8f47e-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
+self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{},\"appUsingSizeAdjust\":false,\"pagesUsingSizeAdjust\":false}"
